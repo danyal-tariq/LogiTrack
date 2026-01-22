@@ -8,6 +8,10 @@ import logger from './config/logger';
 
 //Workers
 import './workers/locationWorker';
+//Queues
+import './queues/locationQueue';
+//Shutdown handlers
+import './utils/shutdown';
 
 dotenv.config();
 const app = express();
