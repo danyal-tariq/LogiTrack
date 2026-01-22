@@ -42,7 +42,7 @@
 
 ## ⚪ Phase 4: Database Engineering
 *Goal: Optimize for millions of rows.*
-- [ ] **Partitioning:** Refactor `vehicle_locations` table to use **Declarative Partitioning** by Date (e.g., one partition per month).
+- [x] **Partitioning:** Refactor `vehicle_locations` table to use **Declarative Partitioning** by Date (e.g., one partition per month).
 - [ ] **Materialized Views:** Create a view for "Daily Fleet Analytics" (total distance, avg speed) and set up a refresh strategy.
 - [ ] **Concurrency Control:** Implement Optimistic Locking (versioning) on the `vehicles` table to prevent race conditions during status updates.
 
