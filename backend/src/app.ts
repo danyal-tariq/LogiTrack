@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import vehicleRouter from './routes/vehicleRoutes';
+import analyticsRouter from './routes/analyticsRoutes';
 import logger from './config/logger';
 
 //Workers
@@ -12,6 +13,8 @@ import './workers/locationWorker';
 import './queues/locationQueue';
 //Shutdown handlers
 import './utils/shutdown';
+//Services
+import { refreshDailyStats } from './services/analyticsService';
 
 dotenv.config();
 const app = express();
@@ -32,7 +35,11 @@ app.get('/', (req, res) => {
 });
 
 // Mounted routes
-app.use('/api', vehicleRouter(io));
+app.use('/api/vehicle', vehicleRouter(io));
+app.use('/api/analytics', analyticsRouter);
+
+// Start analytics refresh interval
+setInterval(refreshDailyStats, 15 * 60 * 1000);
 
 io.on('connection', (socket) => {
     logger.info({ socketId: socket.id }, 'A user connected');

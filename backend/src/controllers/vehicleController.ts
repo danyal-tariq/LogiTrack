@@ -29,8 +29,10 @@ export const updateLocation = async (req: Request, res: Response, io: Server) =>
 
         // 3. Real-Time Emit
         io.emit('vehicle_update', { vehicleId, lat, lng, speed, status, heading });
+
         // 4. Queue Background Job
         await addLocationJob({ vehicleId, lat, lng, speed, status, heading });
+        
         logger.info({ vehicleId, speed, heading }, 'Processed location update');
         res.status(200).json({ success: true });
     } catch (error) {

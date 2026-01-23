@@ -17,4 +17,9 @@ export const LocationUpdateSchema = z.object({
   status: z.string().min(1)
 });
 
+export const DailyFleetStatsSchema = z.object({
+  vehicleId: z.number().int().positive(),
+  limit: z.number().int().positive().optional(),
+});
+
 export type LocationUpdate = z.infer<typeof LocationUpdateSchema>;
