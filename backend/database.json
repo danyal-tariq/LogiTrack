@@ -1,0 +1,18 @@
+{
+  "databaseUrl": {
+    "env": "DATABASE_URL"
+  },
+  "dir": "migrations",
+  "migrationsTable": "pgmigrations",
+  "direction": "up",
+  "count": "all",
+  "ignorePattern": "\\..*",
+  "schema": "public",
+  "checkOrder": true,
+  "verbose": true,
+  "createSchema": false,
+  "createMigrationsSchema": false,
+  "migrationFileLanguage": "ts",
+  "tsconfig": "tsconfig.migrations.json",
+  "tsx": true
+}
