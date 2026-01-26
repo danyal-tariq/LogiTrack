@@ -18,7 +18,7 @@ export const updateLocation = async (req: Request, res: Response, io: Server) =>
             });
         }
 
-        const { vehicleId, lat, lng, speed, status, heading, version } = validation.data;
+        const { vehicleId, lat, lng, speed, status, heading, version, recordedAt } = validation.data;
 
         // 2. Redis Geospatial Update
         await redisClient.geoAdd('fleet_locations', {
@@ -28,10 +28,10 @@ export const updateLocation = async (req: Request, res: Response, io: Server) =>
         });
 
         // 3. Real-Time Emit
-        io.emit('vehicle_update', { vehicleId, lat, lng, speed, status, heading, version });
+        io.emit('vehicle_update', { vehicleId, lat, lng, speed, status, heading, version, recordedAt });
 
         // 4. Queue Background Job
-        await addLocationJob({ vehicleId, lat, lng, speed, status, heading, version });
+        await addLocationJob({ vehicleId, lat, lng, speed, status, heading, version, recordedAt });
         
         logger.info({ vehicleId, speed, heading }, 'Processed location update');
         res.status(200).json({ success: true });

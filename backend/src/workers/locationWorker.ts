@@ -12,8 +12,8 @@ const intervalId = setInterval(() => {
 }, 1000);
 
 const locationWorker = new Worker('locationQueue', async job => {
-    const { vehicleId, lat, lng, speed, heading, status, version } = job.data as LocationUpdate;
-    jobsQueue.push({ vehicleId, lat, lng, speed, heading, status,version });
+    const { vehicleId, lat, lng, speed, heading, status, version, recordedAt } = job.data as LocationUpdate;
+    jobsQueue.push({ vehicleId, lat, lng, speed, heading, status, version, recordedAt });
 }, {
     connection: redisConnection,
     drainDelay: 5,
@@ -37,16 +37,23 @@ const processJobsQueue = async () => {
 
         // 1. Prepare Bulk Insert for locations
         const insertValues = jobsToProcess.map((job, index) => {
-            const valueIndex = index * 5;
-            return `($${valueIndex + 1}, ST_SetSRID(ST_MakePoint($${valueIndex + 2}, $${valueIndex + 3}), 4326), $${valueIndex + 4}, $${valueIndex + 5})`;
+            const valueIndex = index * 6;
+            return `($${valueIndex + 1}, ST_SetSRID(ST_MakePoint($${valueIndex + 2}, $${valueIndex + 3}), 4326), $${valueIndex + 4}, $${valueIndex + 5}, $${valueIndex + 6})`;
         }).join(', ');
 
-        const insertParams = jobsToProcess.flatMap(job => [job.vehicleId, job.lng, job.lat, job.speed, job.heading]);
+        const insertParams = jobsToProcess.flatMap(job => [
+            job.vehicleId, 
+            job.lng, 
+            job.lat, 
+            job.speed, 
+            job.heading,
+            job.recordedAt || new Date().toISOString()
+        ]);
 
         // 2. Prepare Bulk Update for vehicle status
         const updateValues = jobsToProcess.map((job, index) => {
-            const valueIndex = index * 2;
-            return `($${valueIndex + 1}::integer, $${valueIndex + 2}, $${valueIndex + 3})`;
+            const valueIndex = index * 3;
+            return `($${valueIndex + 1}::integer, $${valueIndex + 2}, $${valueIndex + 3}::integer)`;
         }).join(', ');
         const updateParams = jobsToProcess.flatMap(job => [job.vehicleId, job.status, job.version]);
 
@@ -56,7 +63,7 @@ const processJobsQueue = async () => {
 
             // Bulk Insert Locations
             await client.query(`
-                INSERT INTO vehicle_locations (vehicle_id, location, speed, heading)
+                INSERT INTO vehicle_locations (vehicle_id, location, speed, heading, recorded_at)
                 VALUES ${insertValues}
             `, insertParams);
 

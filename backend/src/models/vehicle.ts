@@ -15,8 +15,9 @@ export const LocationUpdateSchema = z.object({
   lng: z.number().min(-180).max(180),
   speed: z.number().min(0).default(0),
   heading: z.number().min(0).max(360).default(0),
-  status: z.string().min(1).default('active'),
+  status: z.enum(['moving', 'idling', 'stopped', 'active', 'inactive', 'maintenance']).default('active'),
   version: z.number().int().nonnegative().default(1),
+  recordedAt: z.string().datetime().optional(),
 });
 
 export const DailyFleetStatsSchema = z.object({
