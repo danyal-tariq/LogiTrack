@@ -47,10 +47,13 @@
 - [x] **Concurrency Control:** Implement Optimistic Locking (versioning) on the `vehicles` table to prevent race conditions during status updates.
 - [ ] **Conflict Detection (Advanced):** Implement a mechanism to handle and log out-of-order delivery based on `recorded_at` timestamps.
 
-## ⚪ Phase 5: The Simulation & Load Testing
-- [ ] **Simulator Script:** Create a Node.js script that spawns 500 "Virtual Trucks" moving randomly around Dubai coordinates.
-- [ ] **Load Testing:** Create a **k6** script to hit the API with 1,000 requests/second.
-- [ ] **Benchmarks:** Record metrics: Latency before Queue vs. Latency after Queue implementation.
+## � Phase 5: The Simulation & Load Testing (COMPLETED)
+- [x] **Simulator Script:** Create a Node.js script that spawns 500 "Virtual Trucks" moving randomly around Dubai coordinates.
+- [x] **Load Testing:** Create a **k6** script to hit the API with 1,000 requests/second.
+- [x] **Benchmarks:** Record metrics: Latency before Queue vs. Latency after Queue implementation.
+- [x] **Stress Testing:** Test system breaking point with progressive load ramping to 4,000 VUs.
+- [x] **Spike Testing:** Test recovery from sudden traffic bursts.
+- [x] **Comprehensive Documentation:** Full benchmark results documented in `BENCHMARKS.md` with before/after comparison.
 
 ## ⚪ Phase 6: Frontend & Real-Time Visualization
 - [ ] **Next.js Setup:** Initialize with TypeScript and Tailwind.
