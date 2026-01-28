@@ -11,6 +11,10 @@ interface MapProps {
   onMapReady?: (map: LeafletMap) => void;
 }
 
+interface MapContainer extends HTMLDivElement {
+  dataset: DOMStringMap & { leafletInitialized?: string };
+}
+
 export default function Map({
   center = [25.2048, 55.2708], // Dubai coordinates
   zoom = 12,
@@ -22,6 +26,8 @@ export default function Map({
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
+
+    const containerElement = mapContainerRef.current;
 
     // Dynamic import of Leaflet
     import('leaflet').then((L) => {
@@ -35,8 +41,8 @@ export default function Map({
       });
 
       // Prevent double-initialization (React StrictMode/dev fast refresh)
-      const container = mapContainerRef.current!;
-      if ((container as any).dataset?.leafletInitialized === 'true') {
+      const container = containerElement as MapContainer;
+      if (container.dataset?.leafletInitialized === 'true') {
         // If already initialized, avoid creating a new map
         return;
       }
@@ -54,11 +60,9 @@ export default function Map({
       mapRef.current = map;
       // mark container as initialized so repeated mounts won't re-create map
       try {
-        (mapContainerRef.current as any).dataset = {
-          ...(mapContainerRef.current as any).dataset,
-          leafletInitialized: 'true',
-        };
-      } catch (err) {
+        const mapContainer = containerElement as MapContainer;
+        mapContainer.dataset.leafletInitialized = 'true';
+      } catch {
         // ignore
       }
 
@@ -75,10 +79,11 @@ export default function Map({
       }
       // clear initialized flag so future mounts can recreate map
       try {
-        if (mapContainerRef.current && (mapContainerRef.current as any).dataset) {
-          delete (mapContainerRef.current as any).dataset.leafletInitialized;
+        const mapContainer = containerElement as MapContainer;
+        if (mapContainer.dataset) {
+          delete mapContainer.dataset.leafletInitialized;
         }
-      } catch (err) {
+      } catch {
         // ignore
       }
     };

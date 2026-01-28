@@ -2,14 +2,14 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { LocationUpdate, TrackedVehicle, FleetStats, VehicleStatus } from '@/types/vehicle';
-import { Map as LeafletMap } from 'leaflet';
+import { Map as LeafletMap, Marker, DivIcon } from 'leaflet';
 
 // Dynamic Leaflet import
-let L: any = null;
+let L: typeof import('leaflet') | null = null;
 
 interface VehicleMarkerData {
   id: string;
-  marker: any;
+  marker: Marker;
   lastUpdate: number;
   data: TrackedVehicle;
 }
@@ -29,11 +29,11 @@ interface UseVehicleMarkersReturn {
   centerOnVehicle: (vehicleId: string) => void;
 }
 
-function createVehicleIcon(status: VehicleStatus, isSelected: boolean): any {
+function createVehicleIcon(status: VehicleStatus, isSelected: boolean): DivIcon {
   const statusClass = status;
   const selectedClass = isSelected ? 'selected' : '';
   
-  return L.divIcon({
+  return L!.divIcon({
     className: `vehicle-marker ${statusClass} ${selectedClass}`,
     html: `
       <div class="vehicle-marker-inner">
@@ -191,6 +191,8 @@ export function useVehicleMarkers({
           existingMarker.data = vehicleData;
         } else {
           // Create new marker
+          if (!L) return; // Safety check
+          
           const marker = L.marker([update.latitude, update.longitude], {
             icon: createVehicleIcon(status, isSelected),
             zIndexOffset: isSelected ? 1000 : 0,

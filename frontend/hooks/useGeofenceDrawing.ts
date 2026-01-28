@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
-import { Map as LeafletMap } from 'leaflet';
+import { Map as LeafletMap, FeatureGroup, Layer } from 'leaflet';
 
 let L: typeof import('leaflet') | null = null;
 let drawLoaded = false;
@@ -14,37 +14,51 @@ interface UseGeofenceDrawingOptions {
   existingGeofences?: Array<{ id: number; coordinates: [number, number][]; color?: string }>;
 }
 
+interface DrawEvent {
+  layer: Layer;
+  layerType: string;
+}
+
+interface LatLng {
+  lat: number;
+  lng: number;
+}
+
 export function useGeofenceDrawing({
   map,
   onGeofenceCreated,
-  onGeofenceEdited,
   onGeofenceClick,
   existingGeofences = [],
 }: UseGeofenceDrawingOptions) {
-  const drawControlRef = useRef<any>(null);
-  const drawnItemsRef = useRef<any>(null);
-  const geofenceLayersRef = useRef<Map<number, any>>(new Map());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const drawControlRef = useRef<any | null>(null);
+  const drawnItemsRef = useRef<FeatureGroup | null>(null);
+  const geofenceLayersRef = useRef<Map<number, Layer>>(new Map());
   const isInitializedRef = useRef(false);
 
-  const handleCreated = useCallback((e: any) => {
+  const handleCreated = useCallback((e: DrawEvent) => {
     const layer = e.layer;
     if (drawnItemsRef.current) {
       drawnItemsRef.current.addLayer(layer);
     }
 
     // Handle both polygon and rectangle
-    let latlngs;
-    if (layer.getLatLngs) {
-      latlngs = layer.getLatLngs();
-      console.log('Raw getLatLngs:', JSON.stringify(latlngs));
+    let latlngs: LatLng[] | undefined;
+    if ('getLatLngs' in layer && typeof layer.getLatLngs === 'function') {
+      const rawLatLngs = layer.getLatLngs();
+      console.log('Raw getLatLngs:', JSON.stringify(rawLatLngs));
       // Polygons have nested arrays, rectangles don't
-      if (Array.isArray(latlngs[0]) && latlngs[0].length > 0 && typeof latlngs[0][0].lat === 'number') {
-        latlngs = latlngs[0];
+      if (Array.isArray(rawLatLngs)) {
+        if (Array.isArray(rawLatLngs[0]) && rawLatLngs[0].length > 0 && typeof rawLatLngs[0][0].lat === 'number') {
+          latlngs = rawLatLngs[0] as LatLng[];
+        } else if (typeof rawLatLngs[0]?.lat === 'number') {
+          latlngs = rawLatLngs as LatLng[];
+        }
       }
     }
 
     if (latlngs && onGeofenceCreated) {
-      const coordinates: [number, number][] = latlngs.map((latlng: any) => [
+      const coordinates: [number, number][] = latlngs.map((latlng: LatLng) => [
         latlng.lat,
         latlng.lng,
       ]);
@@ -61,7 +75,7 @@ export function useGeofenceDrawing({
     const initializeDrawing = async () => {
       try {
         if (!L) {
-          L = (await import('leaflet')).default as any;
+          L = (await import('leaflet')).default;
         }
         if (!drawLoaded) {
           await import('leaflet-draw');
@@ -71,6 +85,7 @@ export function useGeofenceDrawing({
         // Small delay to ensure L.Control.Draw is available
         await new Promise(resolve => setTimeout(resolve, 100));
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (!L || !(L as any).Control?.Draw) {
           console.error('Leaflet.Draw not loaded properly');
           return;
@@ -78,12 +93,16 @@ export function useGeofenceDrawing({
 
         // Create feature group for drawn items
         if (!drawnItemsRef.current) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           drawnItemsRef.current = new (L as any).FeatureGroup();
-          map.addLayer(drawnItemsRef.current);
+          if (drawnItemsRef.current) {
+            map.addLayer(drawnItemsRef.current);
+          }
         }
 
         // Add draw control
         if (!drawControlRef.current) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           drawControlRef.current = new (L as any).Control.Draw({
             position: 'topright',
             draw: {
@@ -124,7 +143,8 @@ export function useGeofenceDrawing({
         }
 
         // Handle polygon creation
-        map.on(((L as any).Draw as any).Event.CREATED, handleCreated);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        map.on((L as any).Draw.Event.CREATED, handleCreated as any);
 
       } catch (err) {
         console.error('Error initializing geofence drawing:', err);
@@ -149,7 +169,7 @@ export function useGeofenceDrawing({
     const loadGeofences = async () => {
       // Ensure Leaflet is loaded
       if (!L) {
-        L = (await import('leaflet')).default as any;
+        L = (await import('leaflet')).default;
       }
 
       // Clear existing geofence layers
@@ -166,6 +186,7 @@ export function useGeofenceDrawing({
         }
 
         const latlngs = geofence.coordinates.map(([lat, lng]) => [lat, lng]);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const polygon = (L as any).polygon(latlngs, {
           color: geofence.color || '#2563eb',
           weight: 3,
@@ -175,7 +196,8 @@ export function useGeofenceDrawing({
 
         // Add click handler
         if (onGeofenceClick) {
-          polygon.on('click', (e: any) => {
+          polygon.on('click', (e: MouseEvent) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (L as any).DomEvent.stopPropagation(e);
             onGeofenceClick(geofence.id);
           });
@@ -187,7 +209,7 @@ export function useGeofenceDrawing({
     };
 
     loadGeofences();
-  }, [map, existingGeofences]);
+  }, [map, existingGeofences, onGeofenceClick]);
 
   const clearDrawing = () => {
     if (drawnItemsRef.current) {
