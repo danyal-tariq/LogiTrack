@@ -2,6 +2,21 @@
 
 A production-grade, event-driven fleet tracking system designed for high concurrency and scalability. Features real-time GPS tracking, geofencing, analytics, and interactive mapping with support for 1,000+ requests/second.
 
+## Performance Benchmarks
+We conducted extensive load testing using **k6** to validate the Write-Behind architecture.
+
+| Metric | Direct DB Writes | Queue (Write-Behind) | Improvement |
+| :--- | :--- | :--- | :--- |
+| **Throughput** | 1,126 req/s | **3,550 req/s** | **3.15x** |
+| **P95 Latency** | 1,010ms | **371ms** | **2.7x Faster** |
+| **Success Rate** | 100% | **99.9%** | Stable |
+
+> **Result:** The implementation of Redis + BullMQ allowed the system to handle **3.5x more traffic** while reducing latency by **63%**.
+
+![Load Test Terminal Screenshot](./assets/load-test-screenshot.png)
+
+[Click here to view the full detailed Benchmarking Report](./BENCHMARKS.md)
+
 ## Tech Stack
 
 ### Backend
@@ -25,6 +40,30 @@ A production-grade, event-driven fleet tracking system designed for high concurr
 - **Containerization**: Docker + Docker Compose
 - **Database Admin**: PgAdmin 4
 - **Load Testing**: Custom simulator + K6
+
+## System Architecture
+
+```mermaid
+graph TD
+    User[User / Truck] -->|HTTP/WS| LB[Load Balancer]
+    LB --> API[Node.js API Cluster]
+    
+    subgraph "Real-Time Layer"
+        API -->|Socket.io| Client[Frontend Dashboard]
+        API -->|Geospatial Write| Redis[Redis Cache]
+    end
+    
+    subgraph "Async Processing"
+        Redis -->|BullMQ Job| Queue[Job Queue]
+        Queue -->|Batch Process| Worker[Worker Service]
+    end
+    
+    subgraph "Persistence"
+        Worker -->|Bulk Insert| DB[(PostgreSQL + PostGIS)]
+        DB -->|Partitioning| Parts[Monthly Partitions]
+        DB -->|Aggregation| Views[Materialized Views]
+    end
+```
 
 ## Features
 
@@ -59,7 +98,7 @@ A production-grade, event-driven fleet tracking system designed for high concurr
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/danyal-tariq/logitrack.git
 cd logitrack
 
 # Start infrastructure (PostgreSQL, Redis, PgAdmin)
